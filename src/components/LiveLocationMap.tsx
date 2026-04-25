@@ -1,14 +1,13 @@
 import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps'
 import { useId, useMemo, useState, type FunctionComponent } from 'react'
 import { useLiveLocation, type LiveLocation } from '../hooks/useLiveLocation'
+import { getGoogleMapsBrowserKey, mapApiLoadErrorToMessage } from '../lib/googleMapsEnv'
 import { MapFollower } from './MapFollower'
 
 const FALLBACK_CENTER: google.maps.LatLngLiteral = { lat: 20, lng: 0 }
 const MAP_ZOOM = 2
 
-const envKey = import.meta.env['VITE_GOOGLE_MAPS_API_KEY']
-const isApiKeyLooksValid =
-  typeof envKey === 'string' && envKey.length > 0 && !envKey.includes('your_')
+const browserKey = getGoogleMapsBrowserKey()
 
 const formatNumber = (n: number, digits: number) =>
   n.toLocaleString(undefined, {
@@ -19,7 +18,8 @@ const formatNumber = (n: number, digits: number) =>
 export const LiveLocationMap: FunctionComponent = () => {
   const mapId = useId()
   const [liveEnabled, setLiveEnabled] = useState(true)
-  const hasApiKey = isApiKeyLooksValid
+  const [mapsLoadError, setMapsLoadError] = useState<string | null>(null)
+  const hasApiKey = browserKey != null
   const locationState = useLiveLocation(liveEnabled && hasApiKey)
 
   const { location, isWatching, errorText } = useMemo((): {
@@ -67,7 +67,9 @@ export const LiveLocationMap: FunctionComponent = () => {
           <p className="mt-3 text-sm text-slate-500">
             Copy <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">.env.example</code> to
             <code className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">.env</code> and
-            add your key.
+            add your key. Use the exact name <code className="font-mono text-xs">VITE_GOOGLE_MAPS_API_KEY</code> (no
+            spaces around <code className="font-mono text-xs">=</code>).
+            After changing <code className="font-mono text-xs">.env</code>, stop and run <code className="font-mono text-xs">npm run dev</code> again.
           </p>
         </div>
       </div>
@@ -80,7 +82,12 @@ export const LiveLocationMap: FunctionComponent = () => {
     <div className="flex min-h-svh flex-col bg-slate-100">
       <header className="z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
         <h1 className="text-base font-semibold text-slate-900">Live location</h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+        <div className="flex max-w-full flex-1 flex-wrap items-center justify-end gap-3 text-sm text-slate-600 sm:min-w-0">
+          {mapsLoadError && (
+            <span className="max-w-full text-amber-800" role="alert" title="Maps script or API key issue">
+              Google Maps: {mapsLoadError}
+            </span>
+          )}
           {location ? (
             <>
               <span className="font-mono text-slate-800" title="Latitude, longitude WGS-84">
@@ -120,7 +127,9 @@ export const LiveLocationMap: FunctionComponent = () => {
       <div className="relative min-h-0 w-full flex-1">
         <APIProvider
           region="US"
-          apiKey={String(envKey)}
+          apiKey={browserKey}
+          onError={(e) => setMapsLoadError(mapApiLoadErrorToMessage(e))}
+          onLoad={() => setMapsLoadError(null)}
         >
           <Map
             className="h-full w-full"

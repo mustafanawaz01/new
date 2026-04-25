@@ -21,6 +21,8 @@ Vite, React, TypeScript, and Tailwind. The app shows your **real-time** position
 
 4. Open the app in a **secure context** (localhost or HTTPS), allow **location** when the browser asks, and use a device with GPS for best “live” results.
 
+5. If the map or key still fails, **stop the dev server** and run `npm run dev` again (Vite only loads `.env` on startup), check the in-app “Google Maps:” message, and in Google Cloud ensure **Maps JavaScript API** is on and the key is allowed for your page origin (HTTP referrers).
+
 `Pause` / `Resume` stops or restarts the geolocation watch without reloading the page.
 
 ## Scripts
