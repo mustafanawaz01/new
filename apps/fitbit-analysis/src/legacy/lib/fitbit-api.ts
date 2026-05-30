@@ -1,4 +1,4 @@
-import { FITBIT_API_BASE } from "../config.js";
+import { FITBIT_API_BASE } from "../fitbit-config.js";
 
 export interface ApiCallResult {
   name: string;

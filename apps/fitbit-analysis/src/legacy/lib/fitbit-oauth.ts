@@ -1,9 +1,17 @@
-import type { AppConfig } from "../config.js";
-import { FITBIT_AUTHORIZE_URL, FITBIT_TOKEN_URL } from "../config.js";
-import type { FitbitTokenResponse } from "./token-store.js";
+import type { LegacyFitbitConfig } from "../fitbit-config.js";
+import { FITBIT_AUTHORIZE_URL, FITBIT_TOKEN_URL } from "../fitbit-config.js";
+
+export interface FitbitTokenResponse {
+  access_token: string;
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+  token_type: string;
+  user_id: string;
+}
 
 export function buildAuthorizeUrl(
-  config: AppConfig,
+  config: LegacyFitbitConfig,
   codeChallenge: string,
   state: string,
 ): string {
@@ -20,7 +28,7 @@ export function buildAuthorizeUrl(
 }
 
 export async function exchangeAuthorizationCode(
-  config: AppConfig,
+  config: LegacyFitbitConfig,
   code: string,
   codeVerifier: string,
 ): Promise<FitbitTokenResponse> {
@@ -58,7 +66,7 @@ export async function exchangeAuthorizationCode(
 }
 
 export async function refreshAccessToken(
-  config: AppConfig,
+  config: LegacyFitbitConfig,
   refreshToken: string,
 ): Promise<FitbitTokenResponse> {
   const body = new URLSearchParams({

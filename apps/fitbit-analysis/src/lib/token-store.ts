@@ -1,24 +1,27 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 
-export interface FitbitTokenResponse {
+export interface GoogleIdentity {
+  legacyUserId?: string;
+  healthUserId?: string;
+}
+
+export interface GoogleStoredTokens {
+  provider: "google";
   access_token: string;
-  expires_in: number;
   refresh_token: string;
   scope: string;
   token_type: string;
-  user_id: string;
-}
-
-export interface StoredTokens extends FitbitTokenResponse {
+  expiry_date: number;
   obtained_at: string;
+  identity?: GoogleIdentity;
 }
 
-export async function readTokens(path: string): Promise<StoredTokens | null> {
+export async function readGoogleTokens(path: string): Promise<GoogleStoredTokens | null> {
   try {
     const raw = await readFile(path, "utf8");
-    const parsed = JSON.parse(raw) as StoredTokens;
-    if (!parsed.access_token || !parsed.refresh_token) {
+    const parsed = JSON.parse(raw) as GoogleStoredTokens;
+    if (parsed.provider !== "google" || !parsed.access_token || !parsed.refresh_token) {
       return null;
     }
     return parsed;
@@ -27,8 +30,12 @@ export async function readTokens(path: string): Promise<StoredTokens | null> {
   }
 }
 
-export async function writeTokens(path: string, tokens: FitbitTokenResponse): Promise<StoredTokens> {
-  const stored: StoredTokens = {
+export async function writeGoogleTokens(
+  path: string,
+  tokens: Omit<GoogleStoredTokens, "provider" | "obtained_at">,
+): Promise<GoogleStoredTokens> {
+  const stored: GoogleStoredTokens = {
+    provider: "google",
     ...tokens,
     obtained_at: new Date().toISOString(),
   };

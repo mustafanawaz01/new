@@ -181,10 +181,10 @@ Plan UX and engineering for **graceful degradation** to summary endpoints and ex
 ### Phase 0 — Foundation (current)
 
 - [x] Repo folder and vision (this document)
-- [x] Phase 0 tooling: OAuth PKCE (`npm run auth`), API spike (`npm run spike`), setup docs
-- [ ] Register Fitbit developer application (Personal) — **you**, via [docs/PHASE-0-DEVELOPER-REGISTRATION.md](./docs/PHASE-0-DEVELOPER-REGISTRATION.md)
-- [ ] Request intraday enablement for required metrics — [docs/INTRADAY-ACCESS-REQUEST.md](./docs/INTRADAY-ACCESS-REQUEST.md)
-- [ ] Spike: authenticate and fetch one day of SpO₂ + HR intraday — run locally after registration
+- [x] Google Health API tooling: OAuth (`npm run auth`), API spike (`npm run spike`), [setup guide](./docs/GOOGLE-HEALTH-SETUP.md)
+- [ ] Google Cloud project + OAuth client configured — **you**, via [docs/GOOGLE-HEALTH-SETUP.md](./docs/GOOGLE-HEALTH-SETUP.md)
+- [ ] Test user added on OAuth consent screen (your Google account)
+- [ ] Spike: `npm run auth` then `npm run spike` — confirm SpO₂ / HR / sleep for a synced day (Fitbit Air + Google Health app)
 
 ### Phase 1 — MVP (“see more than the app”)
 

@@ -1,3 +1,5 @@
+> **Deprecated.** See [GOOGLE-HEALTH-SETUP.md](../GOOGLE-HEALTH-SETUP.md). Legacy Fitbit Web API sunsets ~September 2026.
+
 # Phase 0 — Fitbit developer registration
 
 **You must complete this in a browser with your own Fitbit/Google account.** This cannot be automated by an agent or CI: Fitbit binds the application to your developer identity and terms acceptance.

@@ -1,3 +1,5 @@
+> **Deprecated.** See [GOOGLE-HEALTH-SETUP.md](../GOOGLE-HEALTH-SETUP.md). Legacy Fitbit Web API sunsets ~September 2026.
+
 # Request Fitbit intraday API access
 
 Google may require a manual enablement step for **intraday** resources (including **SpO₂ intraday**), even for **Personal** apps with the `oxygen_saturation` scope.

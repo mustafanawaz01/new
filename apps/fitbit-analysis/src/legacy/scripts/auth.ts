@@ -1,26 +1,23 @@
 import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
 import { writeFile, readFile } from "node:fs/promises";
-import { loadGoogleConfig, paths } from "../config.js";
-import {
-  buildAuthorizeUrl,
-  createOAuth2Client,
-  exchangeCode,
-  fetchUserIdentity,
-} from "../lib/google-health/oauth.js";
-import { writeGoogleTokens } from "../lib/token-store.js";
+import { loadLegacyFitbitConfig, legacyPaths } from "../fitbit-config.js";
+import { generatePkcePair } from "../lib/pkce.js";
+import { buildAuthorizeUrl, exchangeAuthorizationCode } from "../lib/fitbit-oauth.js";
+import { writeFitbitTokens } from "../lib/token-store.js";
 
-interface PendingOAuthState {
+interface PendingPkce {
+  codeVerifier: string;
   state: string;
 }
 
-async function saveOAuthState(data: PendingOAuthState): Promise<void> {
-  await writeFile(paths.oauthStateFile, JSON.stringify(data, null, 2), "utf8");
+async function savePkce(data: PendingPkce): Promise<void> {
+  await writeFile(legacyPaths.pkceFile, JSON.stringify(data, null, 2), "utf8");
 }
 
-async function loadOAuthState(): Promise<PendingOAuthState> {
-  const raw = await readFile(paths.oauthStateFile, "utf8");
-  return JSON.parse(raw) as PendingOAuthState;
+async function loadPkce(): Promise<PendingPkce> {
+  const raw = await readFile(legacyPaths.pkceFile, "utf8");
+  return JSON.parse(raw) as PendingPkce;
 }
 
 function htmlPage(title: string, body: string): string {
@@ -28,21 +25,19 @@ function htmlPage(title: string, body: string): string {
 }
 
 async function main(): Promise<void> {
-  const config = loadGoogleConfig();
-  const client = createOAuth2Client(config);
+  const config = loadLegacyFitbitConfig();
+  const { codeVerifier, codeChallenge } = generatePkcePair();
   const state = randomBytes(16).toString("hex");
-  await saveOAuthState({ state });
+  await savePkce({ codeVerifier, state });
 
-  const authorizeUrl = buildAuthorizeUrl(client, config, state);
-  const port = config.GOOGLE_AUTH_PORT;
-  const redirectPath = new URL(config.GOOGLE_REDIRECT_URI).pathname;
+  const authorizeUrl = buildAuthorizeUrl(config, codeChallenge, state);
+  const port = config.FITBIT_AUTH_PORT;
 
-  console.log("\n=== Fitbit Analysis — Google Health API OAuth ===\n");
-  console.log("Setup: docs/GOOGLE-HEALTH-SETUP.md");
-  console.log("Redirect:", config.GOOGLE_REDIRECT_URI);
-  console.log("\nOpen this URL in your browser:\n");
-  console.log(authorizeUrl);
-  console.log(`\nWaiting for callback on port ${port}… (Ctrl+C to cancel)\n`);
+  console.log("\n=== Fitbit Analysis — Legacy Fitbit OAuth (PKCE) ===\n");
+  console.log("Deprecated. Prefer: npm run auth (Google Health API)\n");
+  console.log("1. Register at https://dev.fitbit.com/apps");
+  console.log("2. Open:\n", authorizeUrl);
+  console.log(`\n3. Waiting for callback on port ${port}…\n`);
 
   await new Promise<void>((resolve, reject) => {
     const server = createServer(async (req, res) => {
@@ -54,7 +49,7 @@ async function main(): Promise<void> {
         }
 
         const requestUrl = new URL(req.url, `http://127.0.0.1:${port}`);
-        if (requestUrl.pathname !== redirectPath) {
+        if (requestUrl.pathname !== new URL(config.FITBIT_REDIRECT_URI).pathname) {
           res.writeHead(404);
           res.end(htmlPage("Not found", "<p>Unknown path.</p>"));
           return;
@@ -66,13 +61,13 @@ async function main(): Promise<void> {
           res.writeHead(400, { "Content-Type": "text/html" });
           res.end(htmlPage("Authorization denied", `<p>${error}: ${desc}</p>`));
           server.close();
-          reject(new Error(`${error}: ${desc}`));
+          reject(new Error(`Authorization error: ${error} ${desc}`));
           return;
         }
 
         const code = requestUrl.searchParams.get("code");
         const returnedState = requestUrl.searchParams.get("state");
-        const pending = await loadOAuthState();
+        const pkce = await loadPkce();
 
         if (!code) {
           res.writeHead(400, { "Content-Type": "text/html" });
@@ -80,37 +75,26 @@ async function main(): Promise<void> {
           return;
         }
 
-        if (returnedState !== pending.state) {
+        if (returnedState !== pkce.state) {
           res.writeHead(400, { "Content-Type": "text/html" });
-          res.end(htmlPage("Invalid state", "<p>CSRF state mismatch. Run npm run auth again.</p>"));
+          res.end(htmlPage("Invalid state", "<p>CSRF state mismatch.</p>"));
           server.close();
           reject(new Error("State mismatch"));
           return;
         }
 
-        const tokenPayload = await exchangeCode(client, code);
-        const identity = await fetchUserIdentity(tokenPayload.access_token);
-
-        await writeGoogleTokens(paths.tokenFile, {
-          ...tokenPayload,
-          identity,
-        });
+        const tokens = await exchangeAuthorizationCode(config, code, pkce.codeVerifier);
+        await writeFitbitTokens(legacyPaths.tokenFile, tokens);
 
         res.writeHead(200, { "Content-Type": "text/html" });
         res.end(
           htmlPage(
             "Success",
-            `<h1>Authorized</h1>
-             <p>Health user: <code>${identity.healthUserId ?? "—"}</code></p>
-             <p>Legacy Fitbit user: <code>${identity.legacyUserId ?? "—"}</code></p>
-             <p>Run <code>npm run spike</code>.</p>`,
+            `<h1>Authorized (legacy)</h1><p>User: ${tokens.user_id}</p><p>Run npm run spike:legacy</p>`,
           ),
         );
 
-        console.log("Authorization successful.");
-        console.log("Identity:", identity);
-        console.log("Tokens saved to:", paths.tokenFile);
-
+        console.log("Saved to", legacyPaths.tokenFile);
         server.close();
         resolve();
       } catch (err) {

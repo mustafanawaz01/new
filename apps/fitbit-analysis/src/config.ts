@@ -7,21 +7,24 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 loadEnv({ path: resolve(packageRoot, ".env") });
 
-const envSchema = z.object({
-  FITBIT_CLIENT_ID: z.string().min(1, "FITBIT_CLIENT_ID is required — see docs/PHASE-0-DEVELOPER-REGISTRATION.md"),
-  FITBIT_REDIRECT_URI: z.string().url().default("http://127.0.0.1:3030/callback"),
-  FITBIT_CLIENT_SECRET: z.string().optional(),
-  FITBIT_SCOPES: z
-    .string()
-    .default("profile oxygen_saturation heartrate sleep respiratory_rate temperature activity"),
-  FITBIT_AUTH_PORT: z.coerce.number().int().min(1024).max(65535).default(3030),
-  FITBIT_SPIKE_DATE: z.string().default("today"),
+const DEFAULT_SCOPES = [
+  "https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly",
+  "https://www.googleapis.com/auth/googlehealth.sleep.readonly",
+].join(" ");
+
+const googleEnvSchema = z.object({
+  GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required — see docs/GOOGLE-HEALTH-SETUP.md"),
+  GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
+  GOOGLE_REDIRECT_URI: z.string().url().default("http://127.0.0.1:3030/callback"),
+  GOOGLE_AUTH_PORT: z.coerce.number().int().min(1024).max(65535).default(3030),
+  GOOGLE_HEALTH_SCOPES: z.string().default(DEFAULT_SCOPES),
+  GOOGLE_SPIKE_DATE: z.string().default("today"),
 });
 
-export type AppConfig = z.infer<typeof envSchema>;
+export type GoogleHealthConfig = z.infer<typeof googleEnvSchema>;
 
-export function loadConfig(): AppConfig {
-  const parsed = envSchema.safeParse(process.env);
+export function loadGoogleConfig(): GoogleHealthConfig {
+  const parsed = googleEnvSchema.safeParse(process.env);
   if (!parsed.success) {
     const message = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid environment:\n${message}`);
@@ -31,11 +34,9 @@ export function loadConfig(): AppConfig {
 
 export const paths = {
   packageRoot,
-  tokenFile: resolve(packageRoot, ".fitbit-tokens.json"),
-  pkceFile: resolve(packageRoot, ".fitbit-pkce.json"),
+  tokenFile: resolve(packageRoot, ".google-health-tokens.json"),
+  oauthStateFile: resolve(packageRoot, ".google-oauth-state.json"),
   spikeOutputDir: resolve(packageRoot, "spike-output"),
 } as const;
 
-export const FITBIT_AUTHORIZE_URL = "https://www.fitbit.com/oauth2/authorize";
-export const FITBIT_TOKEN_URL = "https://api.fitbit.com/oauth2/token";
-export const FITBIT_API_BASE = "https://api.fitbit.com";
+export const GOOGLE_HEALTH_API_BASE = "https://health.googleapis.com/v4";
