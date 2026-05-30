@@ -181,9 +181,10 @@ Plan UX and engineering for **graceful degradation** to summary endpoints and ex
 ### Phase 0 — Foundation (current)
 
 - [x] Repo folder and vision (this document)
-- [ ] Register Fitbit developer application (Personal)
-- [ ] Request intraday enablement for required metrics
-- [ ] Spike: authenticate and fetch one day of SpO₂ + HR intraday
+- [x] Phase 0 tooling: OAuth PKCE (`npm run auth`), API spike (`npm run spike`), setup docs
+- [ ] Register Fitbit developer application (Personal) — **you**, via [docs/PHASE-0-DEVELOPER-REGISTRATION.md](./docs/PHASE-0-DEVELOPER-REGISTRATION.md)
+- [ ] Request intraday enablement for required metrics — [docs/INTRADAY-ACCESS-REQUEST.md](./docs/INTRADAY-ACCESS-REQUEST.md)
+- [ ] Spike: authenticate and fetch one day of SpO₂ + HR intraday — run locally after registration
 
 ### Phase 1 — MVP (“see more than the app”)
 
