@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.google-health-tokens.json
+.google-oauth-state.json
+.fitbit-tokens.json
+.fitbit-pkce.json
+spike-output/
+spike-output-legacy/
